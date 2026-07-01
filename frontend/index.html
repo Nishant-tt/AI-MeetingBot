@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notetaker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #14181f;
+    --muted: #6b7280;
+    --line: #e4e7ec;
+    --primary: #4f46e5;
+    --primary-ink: #ffffff;
+    --live: #e11d48;
+    --ok: #0f9d58;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--body); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .wordmark {
+    font-family: var(--display); font-weight: 700; font-size: 20px;
+    letter-spacing: -0.02em; display: flex; align-items: center; gap: 9px;
+  }
+  .rec {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--live); display: inline-block;
+  }
+  .live-anim { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .live-anim { animation: none; } }
+  header .sub { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px;
+  }
+  .composer label {
+    font-family: var(--display); font-weight: 600; font-size: 15px;
+    display: block; margin-bottom: 10px;
+  }
+  .composer .row { display: flex; gap: 10px; }
+  input[type="url"] {
+    flex: 1; padding: 12px 14px; border: 1px solid var(--line);
+    border-radius: 10px; font-family: var(--mono); font-size: 13px;
+    background: #fbfbfc; color: var(--ink);
+  }
+  input[type="url"]:focus {
+    outline: 2px solid var(--primary); outline-offset: 1px; border-color: transparent;
+  }
+  button {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    border: 0; border-radius: 10px; padding: 12px 18px; cursor: pointer;
+    background: var(--primary); color: var(--primary-ink); white-space: nowrap;
+  }
+  button:hover { filter: brightness(1.06); }
+  button:disabled { opacity: .55; cursor: default; }
+  button.ghost {
+    background: transparent; color: var(--ink); border: 1px solid var(--line);
+  }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 9px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 34px 0 12px;
+  }
+
+  .cals { display: flex; gap: 10px; flex-wrap: wrap; }
+  .cals .acct {
+    font-family: var(--mono); font-size: 12px; color: var(--ok);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  ul.meetings { list-style: none; margin: 0; padding: 0; }
+  li.meeting {
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+    padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--surface); margin-bottom: 8px; cursor: pointer;
+  }
+  li.meeting:hover { border-color: #cdd2db; }
+  .m-title { font-weight: 500; }
+  .m-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; padding: 4px 9px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+  }
+  .chip.done { color: var(--ok); border-color: #bfe6cd; }
+  .chip.live { color: var(--live); border-color: #f3c2cd; }
+  .chip.processing { color: #b45309; border-color: #f3dca6; }
+
+  .empty {
+    border: 1px dashed var(--line); border-radius: 12px; padding: 28px;
+    text-align: center; color: var(--muted); font-size: 14px;
+  }
+
+  /* detail */
+  .detail h2 { font-family: var(--display); font-size: 19px; margin: 0 0 4px; }
+  .detail .url { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .detail h3 {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin: 22px 0 8px;
+  }
+  .detail p { margin: 0 0 4px; }
+  .detail ul { margin: 0; padding-left: 18px; }
+  .detail li { margin-bottom: 4px; }
+  .ts { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+  .speaker { font-weight: 600; }
+  .back { margin-bottom: 18px; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark"><span class="rec"></span>Notetaker</div>
+    <div class="sub" id="clock"></div>
+  </header>
+
+  <div id="view"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = ""; // same origin
+const $ = (s, el=document) => el.querySelector(s);
+const view = $("#view");
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+function chipClass(status) {
+  if (status === "done") return "chip done";
+  if (status === "in_call") return "chip live";
+  if (status === "processing") return "chip processing";
+  return "chip";
+}
+
+async function api(path, opts) {
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error((await r.json().catch(()=>({}))).detail || r.statusText);
+  return r.json();
+}
+
+async function renderHome() {
+  const [meetings, cals] = await Promise.all([
+    api("/meetings"),
+    api("/calendars/status").catch(() => []),
+  ]);
+
+  const calsHtml = cals.length
+    ? cals.map(c => `<span class="acct">● ${c.provider}${c.email ? " · " + c.email : ""}</span>`).join("")
+    : `<span style="color:var(--muted);font-size:13px">No calendars connected yet.</span>`;
+
+  view.innerHTML = `
+    <div class="card composer">
+      <label for="link">Send your notetaker into a meeting</label>
+      <div class="row">
+        <input id="link" type="url" placeholder="https://meet.google.com/… or Zoom / Teams link" />
+        <button id="send">Send notetaker</button>
+      </div>
+      <div class="hint">It joins as a visible participant — admit it from the lobby when it knocks.</div>
+    </div>
+
+    <div class="eyebrow">Calendars</div>
+    <div class="cals">
+      ${calsHtml}
+      <a href="/calendars/google/connect"><button class="ghost">Connect Google</button></a>
+      <a href="/calendars/microsoft/connect"><button class="ghost">Connect Outlook</button></a>
+      <button class="ghost" id="syncbtn">Sync now</button>
+    </div>
+
+    <div class="eyebrow">Meetings</div>
+    <div id="list"></div>
+  `;
+
+  $("#send").onclick = sendBot;
+  $("#link").addEventListener("keydown", e => { if (e.key === "Enter") sendBot(); });
+  $("#syncbtn").onclick = async () => {
+    try { const r = await api("/calendars/sync", { method: "POST" });
+      toast(`Scheduled ${r.scheduled} meeting(s)`); renderHome();
+    } catch (e) { toast(e.message); }
+  };
+
+  const list = $("#list");
+  if (!meetings.length) {
+    list.innerHTML = `<div class="empty">No meetings yet. Paste a link above to send your notetaker into one.</div>`;
+    return;
+  }
+  list.innerHTML = `<ul class="meetings">` + meetings.map(m => `
+    <li class="meeting" data-id="${m.id}">
+      <div>
+        <div class="m-title">${m.title}</div>
+        <div class="m-meta">${m.source} · ${new Date(m.created_at).toLocaleString()}</div>
+      </div>
+      <span class="${chipClass(m.status)}">${m.status}</span>
+    </li>`).join("") + `</ul>`;
+
+  list.querySelectorAll(".meeting").forEach(el =>
+    el.onclick = () => renderDetail(el.dataset.id));
+}
+
+async function sendBot() {
+  const input = $("#link");
+  const url = input.value.trim();
+  if (!url) return toast("Paste a meeting link first");
+  const btn = $("#send"); btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    await api("/bots/instant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ meeting_url: url }),
+    });
+    toast("Notetaker is joining the meeting");
+    input.value = "";
+    renderHome();
+  } catch (e) {
+    toast(e.message); btn.disabled = false; btn.textContent = "Send notetaker";
+  }
+}
+
+async function renderDetail(id) {
+  const m = await api("/meetings/" + id);
+  const n = m.notes;
+  const fmtList = (arr, fn) => (arr && arr.length)
+    ? `<ul>${arr.map(fn).join("")}</ul>` : `<p class="ts">—</p>`;
+
+  view.innerHTML = `
+    <button class="ghost back" id="back">← All meetings</button>
+    <div class="card detail">
+      <h2>${m.title || "Meeting"}</h2>
+      <div class="url">${m.meeting_url}</div>
+      ${!n ? `<p style="margin-top:18px;color:var(--muted)">
+                Notes will appear here once the meeting ends and processing finishes
+                (status: <b>${m.status}</b>).</p>`
+            : `
+        <h3>Description</h3><p>${n.description || "—"}</p>
+        <h3>Summary</h3><p>${n.summary || "—"}</p>
+        <h3>Agenda</h3>
+        ${fmtList(n.agenda, a => `<li>${a.topic || ""} <span class="ts">${a.t_start || ""}</span></li>`)}
+        <h3>Action items</h3>
+        ${fmtList(n.action_items, a => `<li><b>${a.owner || "—"}</b>: ${a.task || ""} <span class="ts">${a.due || ""}</span></li>`)}
+        <h3>Follow-ups</h3>
+        ${fmtList(n.follow_ups, f => `<li>${f}</li>`)}
+        <h3>Transcript</h3>
+        ${fmtList(n.transcript, t => `<li><span class="speaker">${t.speaker || "Unknown"}:</span> ${t.text || ""}</li>`)}
+      `}
+    </div>`;
+  $("#back").onclick = renderHome;
+}
+
+function tickClock() {
+  $("#clock").textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+setInterval(tickClock, 1000); tickClock();
+
+renderHome().catch(e => { view.innerHTML = `<div class="empty">Can't reach the backend. Is it running on this host?<br><span class="ts">${e.message}</span></div>`; });
+</script>
+</body>
+</html>
