@@ -30,19 +30,21 @@ async def recall_webhook(request: Request, background: BackgroundTasks):
 
     event = await request.json()
     event_type = event.get("event")
-
-    # Recall delivers the bot id under data.bot.id (shape can vary by event);
-    # this digs it out defensively.
     data = event.get("data", {})
+
+    print(f"[webhook] event={event_type} data_keys={list(data.keys())}")
+
     bot_id = (
         data.get("bot", {}).get("id")
         or data.get("bot_id")
         or data.get("id")
     )
 
-    # Kick off processing once the transcript is ready. Return 2xx immediately;
-    # do the heavy lifting in the background so Recall doesn't retry.
-    if event_type in ("transcript.done", "bot.done") and bot_id:
+    # recording.done is the only pipeline trigger.
+    # bot.done fires at the same time and would cause a duplicate pipeline run
+    # with a duplicate meeting_notes record — so it is intentionally ignored.
+    if event_type == "recording.done" and bot_id:
+        print(f"[webhook] recording.done bot_id={bot_id} — triggering pipeline")
         background.add_task(process_completed_bot, bot_id)
 
     return {"ok": True}

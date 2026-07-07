@@ -38,9 +38,20 @@ def _send_sync(subject: str, html: str) -> None:
     msg["From"] = settings.smtp_user
     msg["To"] = settings.notify_email
 
+    # Debug: Verify what values are actually loaded
+    print("SMTP HOST:", settings.smtp_host)
+    print("SMTP PORT:", settings.smtp_port)
+    print("SMTP USER:", settings.smtp_user)
+    print("SMTP PASSWORD:", repr(settings.smtp_password))
+    print("NOTIFY EMAIL:", settings.notify_email)
+
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
         server.starttls()
-        server.login(settings.smtp_user, settings.smtp_password)
+        # server.login(settings.smtp_user, settings.smtp_password)
+        server.login(
+            settings.smtp_user.strip(),
+            settings.smtp_password.replace(" ", "").strip(),
+        )
         server.send_message(msg)
 
 
